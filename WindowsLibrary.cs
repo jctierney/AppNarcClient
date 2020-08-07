@@ -11,28 +11,30 @@ namespace AppTrackerClient
     /// </summary>
     public class WindowsLibrary
     {
-        private static readonly DateTime SystemStartup = DateTime.Now.AddMilliseconds(-Environment.TickCount);
+        private static readonly DateTime SystemStartup = DateTime.Now.AddTicks(-Environment.TickCount);
 
         /// <summary>
-        /// Gets the time of the last input from the user.
+        /// Calculates the user's idle time.
         /// </summary>
-        public static DateTime LastInput => SystemStartup.AddMilliseconds(LastInputTicks);
-
-        /// <summary>
-        /// Gets the idle time of the user - i.e. the time between the last input and now.
-        /// </summary>
-        public static TimeSpan IdleTime => DateTime.Now.Subtract(LastInput);
-
-        /// <summary>
-        /// Gets the number of ticks since the last input from the user.
-        /// </summary>
-        protected static int LastInputTicks
+        /// <returns>A timespan indicating the amount of time the user has been idle.</returns>
+        public static TimeSpan UserIdleTime()
         {
-            get
+            LASTINPUTINFO lastInputInfo = new LASTINPUTINFO
             {
-                var lastInputInfo = new LastInputInfo { CbSize = (uint)Marshal.SizeOf(typeof(LastInputInfo)) };
-                GetLastInputInfo(ref lastInputInfo);
-                return lastInputInfo.DwTime;
+                CbSize = (uint)LASTINPUTINFO.SizeOf,
+            };
+
+            GetLastInputInfo(ref lastInputInfo);
+
+            int elapsedTicks = Environment.TickCount - (int)lastInputInfo.DwTime;
+
+            if (elapsedTicks > 0)
+            {
+                return new TimeSpan(0, 0, 0, 0, elapsedTicks);
+            }
+            else
+            {
+                return new TimeSpan(0);
             }
         }
 
@@ -57,13 +59,18 @@ namespace AppTrackerClient
         [DllImport("user32.dll")]
         private static extern int GetWindowThreadProcessId(IntPtr hWnd, out int processId);
 
-        [DllImport("User32.dll")]
-        private static extern bool GetLastInputInfo(ref LastInputInfo inputInfo);
+        [DllImport("user32.dll")]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
-        private struct LastInputInfo
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LASTINPUTINFO
         {
-            public readonly int DwTime;
+            public static readonly int SizeOf = Marshal.SizeOf(typeof(LASTINPUTINFO));
+
+            [MarshalAs(UnmanagedType.U4)]
             public uint CbSize;
+            [MarshalAs(UnmanagedType.U4)]
+            public uint DwTime;
         }
     }
 }

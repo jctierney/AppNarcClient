@@ -24,13 +24,28 @@ namespace AppTrackerClient
         /// How often we should send the information to the host.
         /// This is defined in seconds.
         /// </summary>
-        private static readonly int TimeToSendInterval = 60;
+        private static readonly int TimeToSendInterval = 10;
 
+        /// <summary>
+        /// The interval between checking user's app usage. This is defined in seconds.
+        /// </summary>
+        private static readonly int Interval = 10;
+
+        /// <summary>
+        /// This is the definition for the API Key Header - used to send the API Key in the header.
+        /// </summary>
         private static readonly string ApiKeyHeader = "ApiKey";
 
+        /// <summary>
+        /// This is the definition of the value of the API Key Header.
+        /// This will change for production environments.
+        /// </summary>
         private static readonly string ApiKeyHeaderValue = "{ApiKey}";
 
-        private static readonly string BaseUrl = "https://localhost:32768/appusage";
+        /// <summary>
+        /// This is the URL to send data to - this will naturally change during prod environments.
+        /// </summary>
+        private static readonly string BaseUrl = "https://localhost:32768/api/userappusage/";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AppTracker"/> class.
@@ -44,6 +59,11 @@ namespace AppTrackerClient
         /// Gets or sets a current list of all the Application Usage information.
         /// </summary>
         private List<AppUsage> AppUsages { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user's name that's using app tracker.
+        /// </summary>
+        public string UserName { get; set; }
 
         /// <summary>
         /// Gets or sets the user's environment.
@@ -62,6 +82,7 @@ namespace AppTrackerClient
         public void StartTracking()
         {
             this.UpdateUserEnvironment();
+            this.UpdateUserName();
             while (true)
             {
                 this.TrackAppUsage();
@@ -78,29 +99,29 @@ namespace AppTrackerClient
                 Process activeProcess = this.GetActiveProcess();
                 if (activeProcess == null)
                 {
-                    Console.WriteLine("Nothing...");
                     return;
                 }
 
                 AppUsage appUsageToUpdate = this.AppUsages.Find(x => x.Name.Equals(activeProcess.ProcessName));
                 if (appUsageToUpdate != null)
                 {
-                    appUsageToUpdate.TimeUsed++;
+                    appUsageToUpdate.TimeUsed += Interval;
                 }
                 else
                 {
                     AppUsage appUsage = new AppUsage
                     {
                         Name = activeProcess.ProcessName,
-                        TimeUsed = 1,
+                        TimeUsed = Interval,
+                        Environment = this.UserEnvironment,
                     };
 
                     this.AppUsages.Add(appUsage);
                 }
             }
 
-            Thread.Sleep(1000);
-            this.TimeSinceLastSent += 1;
+            Thread.Sleep(Interval * 1000);
+            this.TimeSinceLastSent += Interval;
             this.CheckAndSendToHost();
         }
 
@@ -139,6 +160,14 @@ namespace AppTrackerClient
         }
 
         /// <summary>
+        /// Updates the user name based on the name of the machine.
+        /// </summary>
+        protected void UpdateUserName()
+        {
+            this.UserName = Environment.MachineName;
+        }
+
+        /// <summary>
         /// Returns the active process - only supports Windows at the moment.
         /// </summary>
         /// <returns>A <see cref="Process"/> identifying the active process by the user.</returns>
@@ -171,8 +200,14 @@ namespace AppTrackerClient
                 WriteIndented = true,
             };
 
-            string jsonData = JsonSerializer.Serialize(this.AppUsages, jsonOptions);
+            UserAppUsage userAppUsage = new UserAppUsage
+            {
+                UserName = this.UserName,
+                AppUsages = this.AppUsages,
+            };
 
+            string jsonData = JsonSerializer.Serialize(userAppUsage, jsonOptions);
+            Debug.WriteLine("json: {0}", jsonData);
             HttpContent content = new StringContent(jsonData);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             content.Headers.Add(ApiKeyHeader, ApiKeyHeaderValue);
@@ -207,8 +242,10 @@ namespace AppTrackerClient
         /// <returns>True if the user has been idle for longer than the defined idleTimeout and false if the user is not idle.</returns>
         protected bool IsUserIdle(int idleTimeout)
         {
-            if (WindowsLibrary.IdleTime.Seconds > idleTimeout)
+            double userIdleTime = WindowsLibrary.UserIdleTime().TotalSeconds;
+            if (userIdleTime > idleTimeout)
             {
+                Console.WriteLine("User has been idle for {0} minutes.", userIdleTime / 60);
                 return true;
             }
 
