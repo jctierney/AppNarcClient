@@ -56,14 +56,14 @@ namespace AppTrackerClient
         }
 
         /// <summary>
-        /// Gets or sets a current list of all the Application Usage information.
-        /// </summary>
-        private List<AppUsage> AppUsages { get; set; }
-
-        /// <summary>
         /// Gets or sets the user's name that's using app tracker.
         /// </summary>
         public string UserName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a current list of all the Application Usage information.
+        /// </summary>
+        private List<AppUsage> AppUsages { get; set; }
 
         /// <summary>
         /// Gets or sets the user's environment.
