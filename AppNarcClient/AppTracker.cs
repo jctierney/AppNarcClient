@@ -45,7 +45,7 @@ namespace AppTrackerClient
         /// <summary>
         /// This is the URL to send data to - this will naturally change during prod environments.
         /// </summary>
-        private static readonly string BaseUrl = "https://localhost:32768/api/userappusage/";
+        private static readonly string BaseUrl = "https://localhost:32772/api/userappusage/";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AppTracker"/> class.
@@ -82,7 +82,11 @@ namespace AppTrackerClient
         public void StartTracking()
         {
             this.UpdateUserEnvironment();
-            this.UpdateUserName();
+            if (string.IsNullOrEmpty(this.UserName))
+            {
+                this.UpdateUserName();
+            }
+
             while (true)
             {
                 this.TrackAppUsage();

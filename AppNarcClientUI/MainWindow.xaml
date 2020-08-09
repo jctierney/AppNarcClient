@@ -1,0 +1,28 @@
+﻿<Window x:Class="AppNarcClientUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AppNarcClientUI"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="240" Width="300"
+        ResizeMode="NoResize">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
+            <Label FontSize="20">AppNarc</Label>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                <Label Width="75">Username:</Label>
+                <TextBox Width="180" Name="UserNameText"></TextBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                <Label Width="75">Password:</Label>
+                <TextBox Width="180"></TextBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,5">
+                <Button Width="80" Margin="0,0,5,0" Name="LoginButton" Click="LoginButton_Click">Login</Button>
+                <Button Width="80" Margin="5,0,0,0">New Account</Button>
+            </StackPanel>
+        </StackPanel>
+        
+    </Grid>
+</Window>
